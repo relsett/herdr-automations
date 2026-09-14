@@ -2,7 +2,7 @@
 
 What changed for someone using the plugin. Dates are release dates.
 
-## Unreleased
+## v0.8.0 — 2026-09-14
 
 - `workspace: existing` with `workspace_id` opens each run in a fresh tab inside
   one existing workspace. Several automations can share a space without creating
