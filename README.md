@@ -39,7 +39,7 @@ a Friday digest — deserve better than you retyping the same prompt every morni
 
 ## Highlights
 
-- **Every run is a branch you can review** — `auto/<name>-<timestamp>` in a fresh worktree, so a run that went sideways is a diff you throw away, not a mess in your working copy. `workspace: root` when the task must see uncommitted state
+- **Every run is a branch you can review** — `auto/<name>-<timestamp>` in a fresh worktree, so a run that went sideways is a diff you throw away, not a mess in your working copy. `workspace: root` when the task must see uncommitted state, `workspace: existing` when a run an hour would bury the sidebar
 - **One YAML file** — no DSL, no store, no database. What the plugin knows is the file you wrote plus an append-only run log
 - **Installs without a toolchain** — prebuilt, checksum-verified binaries for macOS and Linux (arm64/amd64)
 - **`model:` per automation** — a nightly chore has no business on your most expensive model. Set it where you read it; a kind that takes no `--model` is caught when the file loads, not at 3am
@@ -166,7 +166,7 @@ automations:
   - name: issue-triage            # unique, kebab-case
     cron: "0 9 * * 1-5"           # 5-field crontab, or @daily / @hourly / @weekly
     repo: ~/Projects/myapp
-    workspace: worktree           # worktree (default) | root
+    workspace: worktree           # worktree (default) | root | existing
     agent: claude                 # any `herdr agent start --kind`
     model: sonnet                 # optional → --model; kinds without the flag are caught on load
     prompt: "…"                   # OR workflow: <name>  (delegates to hwf run)
@@ -177,10 +177,39 @@ automations:
     disabled: true                # optional: keep it, don't schedule it
 ```
 
+
+### Run in a shared workspace
+
+Create a workspace once with `herdr workspace create --label Automations --no-focus`,
+or find an existing one with `herdr workspace list`. Use its returned ID:
+
+```yaml
+automations:
+  - name: daily-summary
+    cron: "@daily"
+    repo: ~/Projects/myapp
+    workspace: existing
+    workspace_id: w7              # replace with your workspace's ID
+    agent: claude
+    prompt: "Summarize recent changes."
+```
+
+Point several automations at the same `workspace_id` to collect their runs in one
+space. Each run opens a fresh tab labeled with its automation name and timestamp,
+uses `repo` as its working directory, and leaves your focus unchanged. Earlier tabs
+remain open for review; each run gets a distinct agent name.
+
+Like `root`, this mode works directly in `repo` and creates no Git worktree. Runs
+sharing a directory can see each other's file changes. `workspace_id` is required
+only for `existing` mode and belongs to the Herdr session running the daemon. If
+you close that workspace, runs fail until you update the ID; the plugin does not
+create a replacement — see [ADR 0009](docs/adr/0009-a-run-may-share-a-workspace.md).
+The `add` wizard also offers this mode.
+
 ## What this does to your machine
 
 `herdr-automations` schedules and records. It never runs your prompt itself: it asks
-Herdr to create a workspace and start an agent, and that agent runs under whatever
+Herdr to provision a workspace or tab and start an agent, and that agent runs under whatever
 permissions Herdr gives it. So the honest statement is about the scheduler, and the
 agent's own posture is Herdr's to describe.
 
@@ -208,6 +237,11 @@ quietly stagger anything behind your back. What it does instead is tell you: the
 wizard warns while you're still choosing the cron, and `herdr-automations list`
 reports every overlap in the next week. If running them together isn't what you
 want, move a cron — one character, and the file still says what happens.
+
+**What happens to the tabs `workspace: existing` opens?** Same answer, one level
+down: they accumulate, and nothing reaps them. A tab you have read is a tab you
+close. `cleanup` has nothing to say about them — there is no worktree and no
+branch, so the only trace a run leaves is its line in `history.jsonl`.
 
 **What happens to the worktrees?** They accumulate on purpose: a run whose workspace
 is still open is a run nobody has looked at, which makes the Herdr sidebar the inbox.

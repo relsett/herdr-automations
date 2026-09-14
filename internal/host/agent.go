@@ -50,9 +50,10 @@ func (w agentWork) args() []string {
 // yet. Any other error is final — a bad agent kind or a missing binary will
 // not fix itself, and retrying only delays the report.
 func (w agentWork) start(s Session) error {
+	name := agentNameFor(w.a, s.PaneID)
 	deadline := time.Now().Add(w.knobs.paneReady)
 	for {
-		err := w.ops.AgentStart(agentName(w.a.Name), w.a.Agent, s.PaneID, w.args())
+		err := w.ops.AgentStart(name, w.a.Agent, s.PaneID, w.args())
 		if err == nil || !w.ops.HasCode(err, herdr.CodePaneBusy) {
 			return err
 		}
