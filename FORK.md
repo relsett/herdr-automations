@@ -29,3 +29,5 @@ Develop on a fix branch and review upstream updates before merging them. Run
 Push tested changes to this fork's main branch and reinstall from it. Check an
 actual scheduled run before relying on the new version. Restart only this
 plugin when needed; do not stop Herdr or unrelated agents.
+
+The existing GitHub CI can also be run manually from the Actions tab.
