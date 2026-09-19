@@ -89,14 +89,16 @@ func HasCode(err error, code string) bool {
 // was never on PATH.
 func newAPIError(args []string, stdout []byte, stderr string, runErr error) error {
 	cmd := strings.Join(args[:min(2, len(args))], " ")
-	var envelope struct {
-		Error struct {
-			Code    string `json:"code"`
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-	if json.Unmarshal(stdout, &envelope) == nil && envelope.Error.Code != "" {
-		return &APIError{Command: cmd, Code: envelope.Error.Code, Message: envelope.Error.Message}
+	for _, output := range [][]byte{stdout, []byte(stderr)} {
+		var envelope struct {
+			Error struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(output, &envelope) == nil && envelope.Error.Code != "" {
+			return &APIError{Command: cmd, Code: envelope.Error.Code, Message: envelope.Error.Message}
+		}
 	}
 	msg := strings.TrimSpace(stderr)
 	if msg == "" {

@@ -2,6 +2,14 @@
 
 What changed for someone using the plugin. Dates are release dates.
 
+## Unreleased — relsett fork
+
+- Recognize Herdr API errors written to stderr, so the existing retry handles
+  a newly created pane whose shell is not ready yet. Decode stdout and stderr
+  separately to avoid combining fields from different error responses.
+- Build the installed checkout with Go instead of downloading an upstream
+  release binary, ensuring this fork's fixes are included. Go 1.26+ is required.
+
 ## v0.8.0 — 2026-09-14
 
 - `workspace: existing` with `workspace_id` opens each run in a fresh tab inside

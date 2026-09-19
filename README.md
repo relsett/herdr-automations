@@ -1,5 +1,8 @@
 # herdr-automations
 
+Personal fork: [relsett/herdr-automations](https://github.com/relsett/herdr-automations).
+See [FORK.md](FORK.md) for the patch scope and installation/update instructions.
+
 **Scheduled tasks for your coding agents.** A prompt, a cron line, and a fresh git worktree per run.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -41,7 +44,7 @@ a Friday digest — deserve better than you retyping the same prompt every morni
 
 - **Every run is a branch you can review** — `auto/<name>-<timestamp>` in a fresh worktree, so a run that went sideways is a diff you throw away, not a mess in your working copy. `workspace: root` when the task must see uncommitted state, `workspace: existing` when a run an hour would bury the sidebar
 - **One YAML file** — no DSL, no store, no database. What the plugin knows is the file you wrote plus an append-only run log
-- **Installs without a toolchain** — prebuilt, checksum-verified binaries for macOS and Linux (arm64/amd64)
+- **Builds this fork's source** — installation uses Go 1.26+ so the binary includes the fork's fixes
 - **`model:` per automation** — a nightly chore has no business on your most expensive model. Set it where you read it; a kind that takes no `--model` is caught when the file loads, not at 3am
 - **Survives sleep** — occurrences are computed off the wall clock, so a run due while the laptop slept fires on wake (within `catch_up_minutes`) instead of vanishing; anything too late is recorded as `missed`
 - **Schedules that overlap say so** — the wizard warns while you are still choosing the cron, and `list` reports every overlap in the week ahead. Herdr starts them all; the plugin never quietly holds one back, it just makes sure you knew
@@ -69,12 +72,12 @@ schedules, accumulating worktrees — it reports and waits for you.
 ## Quick start
 
 ```bash
-herdr plugin install DnzzL/herdr-automations   # prebuilt binary, no toolchain needed
+herdr plugin install relsett/herdr-automations # builds from source; Go 1.26+ required
 herdr-automations add                          # wizard: validates cron, previews next 3 runs
 ```
 
-Prebuilt for macOS and Linux (arm64/amd64), checksum-verified at install; anything
-else builds from source and needs Go.
+This fork builds the installed checkout with Go 1.26+ on macOS or Linux.
+It does not download upstream release binaries, which would omit the fork's fixes.
 
 **Three ways to add an automation**, all writing the same file:
 

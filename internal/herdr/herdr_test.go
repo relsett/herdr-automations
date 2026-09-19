@@ -22,6 +22,52 @@ func TestNewAPIErrorPrefersHerdrsOwnCode(t *testing.T) {
 	}
 }
 
+func TestNewAPIErrorRecoversCodeFromStderr(t *testing.T) {
+	body := `{"error":{"code":"agent_pane_busy","message":"pane is not an available shell"},"id":"cli:agent:start"}`
+	err := newAPIError([]string{"agent", "start", "triage"}, nil, body, errors.New("exit status 1"))
+	if !HasCode(err, CodePaneBusy) {
+		t.Fatalf("code not recovered from stderr: %v", err)
+	}
+	if want := "agent start: agent_pane_busy: pane is not an available shell"; err.Error() != want {
+		t.Errorf("got %q, want %q", err.Error(), want)
+	}
+}
+
+func TestNewAPIErrorDoesNotMixOutputStreams(t *testing.T) {
+	for _, tc := range []struct {
+		name, stdout, stderr, wantCode, wantMessage string
+	}{
+		{
+			name:        "invalid stdout cannot supply stderr code",
+			stdout:      `{"error":{"code":"agent_pane_busy","message":123}}`,
+			stderr:      `{}`,
+			wantMessage: "agent start: {}",
+		},
+		{
+			name:        "stdout message cannot supplement stderr",
+			stdout:      `{"error":{"message":"unrelated stdout message"}}`,
+			stderr:      `{"error":{"code":"agent_pane_busy"}}`,
+			wantCode:    CodePaneBusy,
+			wantMessage: "agent start: agent_pane_busy",
+		},
+		{
+			name:        "valid stdout still takes precedence",
+			stdout:      `{"error":{"code":"agent_pane_busy","message":"stdout error"}}`,
+			stderr:      `{"error":{"code":"agent_not_running","message":"stderr error"}}`,
+			wantCode:    CodePaneBusy,
+			wantMessage: "agent start: agent_pane_busy: stdout error",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := newAPIError([]string{"agent", "start", "triage"}, []byte(tc.stdout), tc.stderr, errors.New("exit status 1"))
+			var apiErr *APIError
+			if !errors.As(err, &apiErr) || apiErr.Code != tc.wantCode || err.Error() != tc.wantMessage {
+				t.Fatalf("got %v, want code %q and message %q", err, tc.wantCode, tc.wantMessage)
+			}
+		})
+	}
+}
+
 func TestNewAPIErrorFallsBackToTheExecError(t *testing.T) {
 	// The failure that made a run undiagnosable: herdr exits non-zero and
 	// prints nothing, so the only thing left to report is why the process died.
